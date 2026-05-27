@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MCI">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icône-192.png">
+<title>Main Courante — Centre Bus</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07090d;--card:#0f1419;--card2:#161d27;--card3:#1c2530;
+  --border:#1e2b3a;--text:#e4e9f0;--text2:#6a7d93;--text3:#3d4f63;
+  --accent:#00c9a7;--blue:#4da6ff;--red:#ff4d6a;--orange:#ffaa40;
+  --yellow:#ffe066;--green:#00c9a7;--purple:#a78bfa;--pink:#f472b6;
+  --safe-t:env(safe-area-inset-top,0px);--safe-b:env(safe-area-inset-bottom,0px);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100dvh;-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer;border:none}
+input,select,textarea{font-family:inherit}
+
+.hdr{position:fixed;top:0;left:0;right:0;z-index:99;
+padding:calc(var(--safe-t)+8px) 16px 10px;
+background:rgba(7,9,13,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.hdr h1{font-size:16px;font-weight:900;letter-spacing:-.3px}
+.hdr h1 b{background:linear-gradient(135deg,var(--accent),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hdr .dt{font-size:11px;color:var(--text2);font-weight:600}
+
+.nav{position:fixed;bottom:0;left:0;right:0;z-index:99;display:flex;
+background:rgba(7,9,13,.94);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+border-top:1px solid var(--border);padding-bottom:var(--safe-b)}
+.nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;
+padding:10px 0 8px;background:none;color:var(--text2);font-size:10px;font-weight:600;transition:.2s}
+.nav button.on{color:var(--accent)}
+.nav button .ic{font-size:20px}
+
+.wrap{padding:calc(var(--safe-t)+58px) 14px calc(var(--safe-b)+76px);max-width:700px;margin:0 auto}
+.pg{display:none}.pg.on{display:block;animation:fi .2s ease}
+@keyframes fi{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+
+.cd{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:10px}
+.cd2{background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:8px}
+
+/* Quick Add Buttons */
+.qa-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.qa-btn{
+  padding:14px 8px;border-radius:12px;text-align:center;
+  background:var(--card);border:1.5px solid var(--border);
+  transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:4px;
+}
+.qa-btn:active{transform:scale(.95)}
+.qa-btn .qi{font-size:24px}
+.qa-btn .ql{font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.3px}
+.qa-btn.t-panne{border-color:rgba(255,77,106,.3);background:rgba(255,77,106,.05)}
+.qa-btn.t-panne .ql{color:var(--red)}
+.qa-btn.t-remplacement{border-color:rgba(77,166,255,.3);background:rgba(77,166,255,.05)}
+.qa-btn.t-remplacement .ql{color:var(--blue)}
+.qa-btn.t-retard{border-color:rgba(255,170,64,.3);background:rgba(255,170,64,.05)}
+.qa-btn.t-retard .ql{color:var(--orange)}
+.qa-btn.t-observation{border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.05)}
+.qa-btn.t-observation .ql{color:var(--purple)}
+.qa-btn.t-intervention{border-color:rgba(0,201,167,.3);background:rgba(0,201,167,.05)}
+.qa-btn.t-intervention .ql{color:var(--green)}
+.qa-btn.t-autre{border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.05)}
+.qa-btn.t-autre .ql{color:var(--pink)}
+
+/* Event list */
+.ev{padding:12px 14px;background:var(--card);border:1px solid var(--border);border-radius:12px;
+margin-bottom:6px;cursor:pointer;display:flex;gap:10px;align-items:flex-start;transition:.1s;border-left:3px solid var(--border)}
+.ev:active{transform:scale(.99)}
+.ev.t-panne{border-left-color:var(--red)}
+.ev.t-remplacement{border-left-color:var(--blue)}
+.ev.t-retard{border-left-color:var(--orange)}
+.ev.t-observation{border-left-color:var(--purple)}
+.ev.t-intervention{border-left-color:var(--green)}
+.ev.t-autre{border-left-color:var(--pink)}
+.ev .ev-time{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text2);min-width:42px;padding-top:2px}
+.ev .ev-body{flex:1;min-width:0}
+.ev .ev-type{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
+.ev .ev-desc{font-size:13px;color:var(--text)}
+.ev .ev-meta{font-size:11px;color:var(--text2);margin-top:3px;display:flex;gap:8px;flex-wrap:wrap}
+.ev .ev-tag{font-size:10px;padding:2px 7px;border-radius:6px;background:var(--card2);color:var(--text2);font-weight:600}
+
+/* KPI */
+.kpi-r{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;margin-bottom:12px}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 8px;text-align:center}
+.kpi .kv{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:800;margin:3px 0 1px}
+.kpi .kl{font-size:9px;color:var(--text2);font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.kpi .ks{font-size:8px;color:var(--text3)}
+
+/* Bars */
+.bw{margin-bottom:6px}
+.bl{display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px}
+.bt{height:5px;background:var(--card2);border-radius:3px;overflow:hidden}
+.bf{height:100%;border-radius:3px;transition:width .4s}
+
+/* Forms */
+.fg{margin-bottom:12px}
+.fl{display:block;font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px}
+.fi,.fs{width:100%;padding:11px 12px;background:var(--card2);border:2px solid var(--border);border-radius:10px;
+color:var(--text);font-size:15px;transition:border .2s;-webkit-appearance:none}
+.fi:focus,.fs:focus{outline:none;border-color:var(--accent)}
+.fs{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12'%3E%3Cpath d='M6 8L1 3h10z' fill='%236a7d93'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 18px;
+border-radius:10px;font-size:13px;font-weight:700;transition:.15s}
+.btn:active{transform:scale(.96)}
+.btn-a{background:var(--accent);color:var(--bg)}
+.btn-r{background:var(--red);color:#fff}
+.btn-g{background:var(--card2);color:var(--text);border:1px solid var(--border)}
+.btn-b{width:100%}
+.btn-s{padding:7px 12px;font-size:11px;border-radius:8px}
+
+.mo{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:none;
+align-items:flex-end;justify-content:center;backdrop-filter:blur(4px)}
+.mo.open{display:flex}
+.mo-in{background:var(--card);border-radius:20px 20px 0 0;width:100%;max-width:700px;max-height:88vh;
+overflow-y:auto;padding:16px 16px calc(var(--safe-b)+16px);animation:su .3s ease}
+@keyframes su{from{transform:translateY(100%)}to{transform:none}}
+.mo-h{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 14px}
+.mo h3{font-size:17px;font-weight:800;margin-bottom:14px}
+
+.toast{position:fixed;top:calc(var(--safe-t)+58px);left:50%;transform:translateX(-50%);
+background:var(--accent);color:var(--bg);padding:8px 18px;border-radius:10px;font-weight:700;font-size:12px;
+z-index:300;opacity:0;transition:.3s;pointer-events:none}
+.toast.show{opacity:1}
+
+/* Insights card */
+.insight{background:linear-gradient(135deg,rgba(0,201,167,.08),rgba(77,166,255,.05));
+border:1px solid rgba(0,201,167,.2);border-radius:14px;padding:16px;margin-bottom:10px}
+.insight .ins-title{font-size:12px;font-weight:800;color:var(--accent);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.insight p{font-size:12px;line-height:1.6;color:var(--text)}
+
+/* Day separator */
+.day-sep{font-size:11px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:1px;
+padding:8px 0 6px;margin-top:8px;border-bottom:1px solid var(--border)}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <h1>📋 <b>MAIN COURANTE</b></h1>
+  <div class="dt" id="headerDate"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<div class="wrap">
+  <!-- ═══ JOURNAL ═══ -->
+  <div class="pg on" id="pg-journal">
+    <div class="qa-grid">
+      <button class="qa-btn t-panne" onclick="quickAdd('Panne')"><span class="qi">🔴</span><span class="ql">Panne</span></button>
+      <button class="qa-btn t-remplacement" onclick="quickAdd('Remplacement')"><span class="qi">🔄</span><span class="ql">Remplace.</span></button>
+      <button class="qa-btn t-retard" onclick="quickAdd('Retard')"><span class="qi">🟠</span><span class="ql">Retard</span></button>
+      <button class="qa-btn t-observation" onclick="quickAdd('Observation')"><span class="qi">👁</span><span class="ql">Observ.</span></button>
+      <button class="qa-btn t-intervention" onclick="quickAdd('Intervention')"><span class="qi">🟢</span><span class="ql">Interv.</span></button>
+      <button class="qa-btn t-autre" onclick="quickAdd('Autre')"><span class="qi">📝</span><span class="ql">Autre</span></button>
+    </div>
+    <div id="todayCount" style="font-size:12px;color:var(--text2);font-weight:600;margin-bottom:10px"></div>
+    <div id="eventList"></div>
+  </div>
+
+  <!-- ═══ BILAN ═══ -->
+  <div class="pg" id="pg-bilan">
+    <div style="display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;-webkit-overflow-scrolling:touch">
+      <button class="btn btn-s" id="pb-today" onclick="setBilanPeriod('today')" style="white-space:nowrap">Aujourd'hui</button>
+      <button class="btn btn-s" id="pb-week" onclick="setBilanPeriod('week')" style="white-space:nowrap">7 jours</button>
+      <button class="btn btn-s" id="pb-month" onclick="setBilanPeriod('month')" style="white-space:nowrap">30 jours</button>
+      <button class="btn btn-s" id="pb-all" onclick="setBilanPeriod('all')" style="white-space:nowrap">Tout</button>
+    </div>
+    <div id="bilanContent"></div>
+  </div>
+
+  <!-- ═══ INSIGHTS ═══ -->
+  <div class="pg" id="pg-insights">
+    <h2 style="font-size:15px;font-weight:800;margin-bottom:12px">💡 Insights & Recommandations</h2>
+    <div id="insightsList"></div>
+  </div>
+
+  <!-- ═══ PLUS ═══ -->
+  <div class="pg" id="pg-plus">
+    <h2 style="font-size:15px;font-weight:800;margin-bottom:12px">Parametres</h2>
+    <div class="cd">
+      <p style="font-size:12px;color:var(--text2);margin-bottom:12px">Donnees stockees localement.</p>
+      <button class="btn btn-g btn-b" onclick="exportAll()" style="margin-bottom:6px">📥 Exporter</button>
+      <button class="btn btn-g btn-b" onclick="document.getElementById('impF').click()" style="margin-bottom:6px">📤 Importer</button>
+      <input type="file" id="impF" accept=".json" style="display:none" onchange="importAll(event)">
+      <button class="btn btn-r btn-b" onclick="resetAll()">🗑 Tout effacer</button>
+    </div>
+    <div class="cd" style="margin-top:8px">
+      <p style="font-size:10px;color:var(--text2)">Main Courante Intelligente v1.0<br>Centre Bus Croix Nivert — Poste 8</p>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="mo" id="modal" onclick="if(event.target===this)closeMo()">
+  <div class="mo-in"><div class="mo-h"></div><div id="moC"></div></div>
+</div>
+
+<nav class="nav">
+  <button class="on" onclick="go('journal')" data-p="journal"><span class="ic">📋</span>Journal</button>
+  <button onclick="go('bilan')" data-p="bilan"><span class="ic">📊</span>Bilan</button>
+  <button onclick="go('insights')" data-p="insights"><span class="ic">💡</span>Insights</button>
+  <button onclick="go('plus')" data-p="plus"><span class="ic">⚙️</span>Plus</button>
+</nav>
+
+<script>
+// ═══════════════════════════════
+// DATA
+// ═══════════════════════════════
+const TYPES=['Panne','Remplacement','Retard','Observation','Intervention','Autre'];
+const TYPE_ICON={Panne:'🔴',Remplacement:'🔄',Retard:'🟠',Observation:'👁',Intervention:'🟢',Autre:'📝'};
+const TYPE_COL={Panne:'var(--red)',Remplacement:'var(--blue)',Retard:'var(--orange)',Observation:'var(--purple)',Intervention:'var(--green)',Autre:'var(--pink)'};
+const CATS_PANNE=["Moteur","Climatisation","Portes","Freins","Direction","Electrique","Pneumatique","Transmission","Carrosserie","Autre"];
+const JOURS=['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+const JOURS_C=['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+
+let events=JSON.parse(localStorage.getItem('mci_events')||'[]');
+let bilanPeriod='week';
+
+function sv(){localStorage.setItem('mci_events',JSON.stringify(events))}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function todayStr(){return new Date().toISOString().split('T')[0]}
+function nowISO(){return new Date().toISOString()}
+function hhmm(iso){return new Date(iso).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}
+function dateLabel(d){
+  const today=todayStr();const t=new Date(d);const ds=d.split('T')[0]||d;
+  if(ds===today)return"Aujourd'hui";
+  const y=new Date();y.setDate(y.getDate()-1);
+  if(ds===y.toISOString().split('T')[0])return'Hier';
+  return JOURS[t.getDay()]+' '+t.getDate()+'/'+(t.getMonth()+1);
+}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000)}
+function daysBetween(d1,d2){return Math.round((d2-d1)/86400000)}
+
+// Header date
+function updateHeader(){
+  const d=new Date();
+  document.getElementById('headerDate').textContent=JOURS[d.getDay()]+' '+d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear();
+}
+updateHeader();setInterval(updateHeader,60000);
+
+// ═══════════════════════════════
+// NAV
+// ═══════════════════════════════
+function go(p){
+  document.querySelectorAll('.pg').forEach(x=>x.classList.remove('on'));
+  document.getElementById('pg-'+p).classList.add('on');
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('on',b.dataset.p===p));
+  if(p==='journal')renderJournal();
+  if(p==='bilan')renderBilan();
+  if(p==='insights')renderInsights();
+}
+function openMo(h){document.getElementById('moC').innerHTML=h;document.getElementById('modal').classList.add('open')}
+function closeMo(){document.getElementById('modal').classList.remove('open')}
+
+// ═══════════════════════════════
+// JOURNAL
+// ═══════════════════════════════
+function quickAdd(type){
+  let extra='';
+  if(type==='Panne'){
+    extra=`<div class="fr">
+      <div class="fg"><label class="fl">Bus</label><input class="fi" id="ev_bus" placeholder="N° bus"></div>
+      <div class="fg"><label class="fl">Ligne</label><input class="fi" id="ev_ligne" placeholder="Ex: 62"></div>
+    </div>
+    <div class="fg"><label class="fl">Categorie</label><select class="fs" id="ev_cat"><option value="">—</option>${CATS_PANNE.map(c=>`<option>${c}</option>`).join('')}</select></div>`;
+  } else if(type==='Remplacement'){
+    extra=`<div class="fr">
+      <div class="fg"><label class="fl">Bus remplace</label><input class="fi" id="ev_bus" placeholder="Bus en panne"></div>
+      <div class="fg"><label class="fl">Bus envoy</label><input class="fi" id="ev_bus2" placeholder="Bus de remplacement"></div>
+    </div>
+    <div class="fg"><label class="fl">Ligne</label><input class="fi" id="ev_ligne" placeholder="Ex: 62"></div>`;
+  } else if(type==='Retard'){
+    extra=`<div class="fr">
+      <div class="fg"><label class="fl">Bus</label><input class="fi" id="ev_bus" placeholder="N° bus"></div>
+      <div class="fg"><label class="fl">Ligne</label><input class="fi" id="ev_ligne" placeholder="Ex: 62"></div>
+    </div>
+    <div class="fg"><label class="fl">Duree retard (min)</label><input class="fi" type="number" id="ev_duree" placeholder="15"></div>`;
+  } else {
+    extra=`<div class="fr">
+      <div class="fg"><label class="fl">Bus (optionnel)</label><input class="fi" id="ev_bus" placeholder="N° bus"></div>
+      <div class="fg"><label class="fl">Ligne (optionnel)</label><input class="fi" id="ev_ligne" placeholder="Ligne"></div>
+    </div>`;
+  }
+
+  openMo(`<h3>${TYPE_ICON[type]} ${type}</h3>
+    ${extra}
+    <div class="fg"><label class="fl">Description</label><textarea class="fi" id="ev_desc" rows="2" placeholder="Que s'est-il passe ?"></textarea></div>
+    <button class="btn btn-a btn-b" onclick="saveEvent('${type}')">✓ Enregistrer</button>`);
+}
+
+function saveEvent(type){
+  const ev={
+    id:uid(), type, createdAt:nowISO(),
+    bus:document.getElementById('ev_bus')?.value||'',
+    ligne:document.getElementById('ev_ligne')?.value||'',
+    description:document.getElementById('ev_desc')?.value||'',
+    categorie:document.getElementById('ev_cat')?.value||'',
+    bus2:document.getElementById('ev_bus2')?.value||'',
+    duree:document.getElementById('ev_duree')?.value||'',
+  };
+  events.push(ev);sv();closeMo();toast(type+' enregistre ✓');renderJournal();
+}
+
+function editEvent(id){
+  const ev=events.find(e=>e.id===id);if(!ev)return;
+  openMo(`<h3>Modifier</h3>
+    <div class="fr">
+      <div class="fg"><label class="fl">Type</label><select class="fs" id="ee_type">${TYPES.map(t=>`<option${ev.type===t?' selected':''}>${t}</option>`).join('')}</select></div>
+      <div class="fg"><label class="fl">Bus</label><input class="fi" id="ee_bus" value="${ev.bus||''}"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Ligne</label><input class="fi" id="ee_ligne" value="${ev.ligne||''}"></div>
+      <div class="fg"><label class="fl">Cat. panne</label><select class="fs" id="ee_cat"><option value="">—</option>${CATS_PANNE.map(c=>`<option${ev.categorie===c?' selected':''}>${c}</option>`).join('')}</select></div>
+    </div>
+    <div class="fg"><label class="fl">Description</label><textarea class="fi" id="ee_desc" rows="2">${ev.description||''}</textarea></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-a" style="flex:1" onclick="updateEvent('${id}')">💾 OK</button>
+      <button class="btn btn-r btn-s" onclick="deleteEvent('${id}')">🗑</button>
+    </div>`);
+}
+
+function updateEvent(id){
+  const idx=events.findIndex(e=>e.id===id);if(idx<0)return;
+  events[idx]={...events[idx],
+    type:document.getElementById('ee_type').value,
+    bus:document.getElementById('ee_bus').value,
+    ligne:document.getElementById('ee_ligne').value,
+    categorie:document.getElementById('ee_cat').value,
+    description:document.getElementById('ee_desc').value,
+  };
+  sv();closeMo();toast('Modifie ✓');renderJournal();
+}
+
+function deleteEvent(id){
+  if(!confirm('Supprimer ?'))return;
+  events=events.filter(e=>e.id!==id);sv();closeMo();toast('Supprime');renderJournal();
+}
+
+function renderJournal(){
+  const sorted=[...events].sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
+  const todayEvts=sorted.filter(e=>e.createdAt.startsWith(todayStr()));
+  document.getElementById('todayCount').textContent=todayEvts.length>0?
+    todayEvts.length+' evenement'+(todayEvts.length>1?'s':'')+' aujourd\'hui':'Aucun evenement aujourd\'hui';
+
+  if(sorted.length===0){
+    document.getElementById('eventList').innerHTML=`<div style="text-align:center;padding:50px 20px;color:var(--text2)">
+      <div style="font-size:48px;margin-bottom:14px">📋</div>
+      <p style="font-size:14px;margin-bottom:6px">Ta main courante est vide</p>
+      <p style="font-size:12px">Appuie sur un bouton ci-dessus pour noter un evenement</p></div>`;
+    return;
+  }
+
+  // Group by day, show last 50
+  let html='';let lastDay='';
+  sorted.slice(0,50).forEach(ev=>{
+    const day=ev.createdAt.split('T')[0];
+    if(day!==lastDay){html+=`<div class="day-sep">${dateLabel(ev.createdAt)}</div>`;lastDay=day}
+    const col=TYPE_COL[ev.type]||'var(--text2)';
+    html+=`<div class="ev t-${ev.type.toLowerCase()}" onclick="editEvent('${ev.id}')">
+      <div class="ev-time">${hhmm(ev.createdAt)}</div>
+      <div class="ev-body">
+        <div class="ev-type" style="color:${col}">${TYPE_ICON[ev.type]||''} ${ev.type}</div>
+        <div class="ev-desc">${ev.description||'—'}</div>
+        <div class="ev-meta">
+          ${ev.bus?`<span class="ev-tag">Bus ${ev.bus}</span>`:''}
+          ${ev.bus2?`<span class="ev-tag">→ ${ev.bus2}</span>`:''}
+          ${ev.ligne?`<span class="ev-tag">L.${ev.ligne}</span>`:''}
+          ${ev.categorie?`<span class="ev-tag">${ev.categorie}</span>`:''}
+          ${ev.duree?`<span class="ev-tag">${ev.duree} min</span>`:''}
+        </div>
+      </div>
+    </div>`;
+  });
+  document.getElementById('eventList').innerHTML=html;
+}
+
+// ═══════════════════════════════
+// BILAN
+// ═══════════════════════════════
+function setBilanPeriod(p){
+  bilanPeriod=p;
+  ['today','week','month','all'].forEach(x=>{
+    const b=document.getElementById('pb-'+x);
+    if(x===p){b.style.background='var(--accent)';b.style.color='var(--bg)'}
+    else{b.style.background='var(--card2)';b.style.color='var(--text)';b.style.border='1px solid var(--border)'}
+  });
+  renderBilan();
+}
+
+function getFilteredEvents(){
+  const now=new Date();
+  return events.filter(e=>{
+    if(bilanPeriod==='all')return true;
+    const d=new Date(e.createdAt);
+    if(bilanPeriod==='today')return e.createdAt.startsWith(todayStr());
+    if(bilanPeriod==='week')return daysBetween(d,now)<=7;
+    if(bilanPeriod==='month')return daysBetween(d,now)<=30;
+    return true;
+  });
+}
+
+function renderBilan(){
+  setBilanPeriod(bilanPeriod);
+  const evts=getFilteredEvents();
+  const total=evts.length;
+  const pannes=evts.filter(e=>e.type==='Panne').length;
+  const rempl=evts.filter(e=>e.type==='Remplacement').length;
+  const retards=evts.filter(e=>e.type==='Retard').length;
+  const obs=evts.filter(e=>e.type==='Observation').length;
+  const inter=evts.filter(e=>e.type==='Intervention').length;
+
+  // By type
+  const byType={};TYPES.forEach(t=>byType[t]=evts.filter(e=>e.type===t).length);
+  const maxType=Math.max(...Object.values(byType),1);
+
+  // By ligne
+  const byLigne={};
+  evts.forEach(e=>{if(e.ligne)byLigne[e.ligne]=(byLigne[e.ligne]||0)+1});
+  const topLignes=Object.entries(byLigne).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const maxLigne=topLignes.length>0?topLignes[0][1]:1;
+
+  // By categorie panne
+  const byCat={};
+  evts.filter(e=>e.type==='Panne'&&e.categorie).forEach(e=>{byCat[e.categorie]=(byCat[e.categorie]||0)+1});
+  const topCats=Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
+  const maxCat=topCats.length>0?topCats[0][1]:1;
+
+  // By day of week
+  const byDay=[0,0,0,0,0,0,0];
+  evts.forEach(e=>{byDay[new Date(e.createdAt).getDay()]++});
+  const maxDay=Math.max(...byDay,1);
+
+  // Top bus
+  const byBus={};
+  evts.filter(e=>e.bus).forEach(e=>{byBus[e.bus]=(byBus[e.bus]||0)+1});
+  const topBus=Object.entries(byBus).sort((a,b)=>b[1]-a[1]).slice(0,5);
+
+  const periodLabel=bilanPeriod==='today'?"aujourd'hui":bilanPeriod==='week'?'sur 7 jours':bilanPeriod==='month'?'sur 30 jours':'au total';
+
+  let html=`
+    <div class="kpi-r">
+      <div class="kpi"><div class="kl">Total</div><div class="kv">${total}</div><div class="ks">${periodLabel}</div></div>
+      <div class="kpi"><div class="kl">Pannes</div><div class="kv" style="color:var(--red)">${pannes}</div></div>
+      <div class="kpi"><div class="kl">Rempl.</div><div class="kv" style="color:var(--blue)">${rempl}</div></div>
+      <div class="kpi"><div class="kl">Retards</div><div class="kv" style="color:var(--orange)">${retards}</div></div>
+      <div class="kpi"><div class="kl">Observ.</div><div class="kv" style="color:var(--purple)">${obs}</div></div>
+    </div>`;
+
+  // By type bars
+  html+=`<div class="cd"><div style="font-size:13px;font-weight:800;margin-bottom:10px">Par type</div>`;
+  TYPES.forEach(t=>{
+    const n=byType[t];if(n===0)return;
+    html+=`<div class="bw"><div class="bl"><span>${TYPE_ICON[t]} ${t}</span><span style="font-weight:700;font-family:'JetBrains Mono',monospace">${n}</span></div>
+    <div class="bt"><div class="bf" style="width:${n/maxType*100}%;background:${TYPE_COL[t]}"></div></div></div>`;
+  });
+  html+=`</div>`;
+
+  // Lignes
+  if(topLignes.length>0){
+    html+=`<div class="cd"><div style="font-size:13px;font-weight:800;margin-bottom:10px">🛣 Lignes les plus touchees</div>`;
+    topLignes.forEach(([l,n])=>{
+      html+=`<div class="bw"><div class="bl"><span>Ligne ${l}</span><span style="font-weight:700;font-family:'JetBrains Mono',monospace">${n}</span></div>
+      <div class="bt"><div class="bf" style="width:${n/maxLigne*100}%;background:linear-gradient(90deg,var(--blue),var(--purple))"></div></div></div>`;
+    });
+    html+=`</div>`;
+  }
+
+  // Cat pannes
+  if(topCats.length>0){
+    html+=`<div class="cd"><div style="font-size:13px;font-weight:800;margin-bottom:10px">🔧 Types de pannes</div>`;
+    topCats.forEach(([c,n])=>{
+      html+=`<div class="bw"><div class="bl"><span>${c}</span><span style="font-weight:700;font-family:'JetBrains Mono',monospace">${n}</span></div>
+      <div class="bt"><div class="bf" style="width:${n/maxCat*100}%;background:linear-gradient(90deg,var(--red),var(--orange))"></div></div></div>`;
+    });
+    html+=`</div>`;
+  }
+
+  // Jours
+  html+=`<div class="cd"><div style="font-size:13px;font-weight:800;margin-bottom:10px">📅 Jours les plus charges</div>
+    <div style="display:flex;gap:4px;align-items:flex-end;height:80px">`;
+  byDay.forEach((n,i)=>{
+    const pct=n/maxDay*100;
+    html+=`<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;margin-bottom:3px;color:${n===Math.max(...byDay)?'var(--accent)':'var(--text2)'}">${n}</div>
+      <div style="width:100%;height:${Math.max(pct,3)}%;background:${n===Math.max(...byDay)?'var(--accent)':'var(--card3)'};border-radius:4px 4px 0 0;transition:.4s"></div>
+      <div style="font-size:9px;color:var(--text2);margin-top:4px;font-weight:600">${JOURS_C[i]}</div>
+    </div>`;
+  });
+  html+=`</div></div>`;
+
+  // Top bus
+  if(topBus.length>0){
+    html+=`<div class="cd"><div style="font-size:13px;font-weight:800;margin-bottom:10px">🚌 Bus les plus mentionnes</div>`;
+    topBus.forEach(([b,n],i)=>{
+      html+=`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
+        <span style="font-weight:800;color:var(--text2);width:20px">#${i+1}</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-weight:700">${b}</span>
+        <span style="flex:1"></span>
+        <span style="font-family:'JetBrains Mono',monospace;font-weight:800;color:var(--accent)">${n}</span>
+        <span style="font-size:10px;color:var(--text2)">mentions</span>
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+
+  document.getElementById('bilanContent').innerHTML=html;
+}
+
+// ═══════════════════════════════
+// INSIGHTS
+// ═══════════════════════════════
+function renderInsights(){
+  const last30=events.filter(e=>daysBetween(new Date(e.createdAt),new Date())<=30);
+  const last7=events.filter(e=>daysBetween(new Date(e.createdAt),new Date())<=7);
+  let html='';
+
+  if(events.length<3){
+    html=`<div class="insight"><div class="ins-title">📝 Continue de remplir</div>
+    <p>L'outil a besoin d'au moins quelques jours de donnees pour generer des insights pertinents. Continue a noter chaque evenement, les tendances vont apparaitre.</p></div>`;
+    document.getElementById('insightsList').innerHTML=html;return;
+  }
+
+  // Insight 1: Volume
+  const avgPerDay=last30.length>0?(last30.length/Math.min(30,daysBetween(new Date(last30[last30.length-1].createdAt),new Date())||1)).toFixed(1):0;
+  html+=`<div class="insight"><div class="ins-title">📊 Volume d'activite</div>
+  <p>Tu geres en moyenne <b>${avgPerDay} evenements par jour</b> sur les 30 derniers jours.
+  ${avgPerDay>=5?'C\'est un volume significatif — ca montre que le poste 8 est un poste cle dans le fonctionnement du centre bus.':
+  avgPerDay>=2?'Un rythme regulier. Continue a tout noter pour avoir un bilan solide.':
+  'Continue a noter systematiquement chaque evenement pour construire un historique complet.'}</p></div>`;
+
+  // Insight 2: Ligne la plus touchee
+  const byLigne={};
+  last30.forEach(e=>{if(e.ligne)byLigne[e.ligne]=(byLigne[e.ligne]||0)+1});
+  const topLigne=Object.entries(byLigne).sort((a,b)=>b[1]-a[1]);
+  if(topLigne.length>0){
+    const [ligne,count]=topLigne[0];
+    const pct=Math.round(count/last30.length*100);
+    html+=`<div class="insight"><div class="ins-title">🛣 Ligne a surveiller</div>
+    <p>La <b>ligne ${ligne}</b> concentre <b>${pct}%</b> des evenements (${count} sur ${last30.length}).
+    ${pct>=30?'C\'est une proportion importante — il y a peut-etre un probleme structurel sur cette ligne (parcours, materiel affecte, conditions de circulation).':''}
+    C'est une info concrete a remonter aux cadres.</p></div>`;
+  }
+
+  // Insight 3: Type de panne dominant
+  const byCat={};
+  last30.filter(e=>e.type==='Panne'&&e.categorie).forEach(e=>{byCat[e.categorie]=(byCat[e.categorie]||0)+1});
+  const topCat=Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
+  if(topCat.length>0){
+    html+=`<div class="insight"><div class="ins-title">🔧 Panne recurrente</div>
+    <p>Le type de panne le plus frequent est <b>${topCat[0][0]}</b> (${topCat[0][1]} fois sur 30 jours).
+    ${topCat[0][1]>=3?'Cette recurrence merite une remontee a l\'atelier — une maintenance preventive ciblee pourrait eviter ces pannes en ligne.':''}
+    </p></div>`;
+  }
+
+  // Insight 4: Jour le plus charge
+  const byDay=[0,0,0,0,0,0,0];
+  last30.forEach(e=>{byDay[new Date(e.createdAt).getDay()]++});
+  const maxDayIdx=byDay.indexOf(Math.max(...byDay));
+  if(Math.max(...byDay)>0){
+    html+=`<div class="insight"><div class="ins-title">📅 Jour critique</div>
+    <p>Le <b>${JOURS[maxDayIdx]}</b> est le jour le plus charge avec <b>${byDay[maxDayIdx]} evenements</b> sur 30 jours.
+    Ca peut aider a anticiper : prevoir plus de bus de reserve ce jour-la ou renforcer la vigilance.</p></div>`;
+  }
+
+  // Insight 5: Bus problematique
+  const byBus={};
+  last30.filter(e=>e.bus&&e.type==='Panne').forEach(e=>{byBus[e.bus]=(byBus[e.bus]||0)+1});
+  const topBus=Object.entries(byBus).sort((a,b)=>b[1]-a[1]);
+  if(topBus.length>0&&topBus[0][1]>=2){
+    html+=`<div class="insight"><div class="ins-title">🚌 Bus a risque</div>
+    <p>Le bus <b>${topBus[0][0]}</b> a eu <b>${topBus[0][1]} pannes</b> en 30 jours. C'est un candidat pour un passage atelier approfondi.
+    ${topBus.length>1&&topBus[1][1]>=2?`Le bus <b>${topBus[1][0]}</b> est egalement a surveiller (${topBus[1][1]} pannes).`:''}</p></div>`;
+  }
+
+  // Insight 6: Ratio remplacement
+  const pannes=last30.filter(e=>e.type==='Panne').length;
+  const rempl=last30.filter(e=>e.type==='Remplacement').length;
+  if(pannes>0){
+    const ratio=rempl/pannes;
+    html+=`<div class="insight"><div class="ins-title">🔄 Efficacite des remplacements</div>
+    <p>Sur ${pannes} pannes, tu as effectue ${rempl} remplacement${rempl>1?'s':''} — soit un ratio de <b>${Math.round(ratio*100)}%</b>.
+    ${ratio>=0.8?'Excellent taux de remplacement. Les bus en panne sont rapidement substitues.':
+    ratio>=0.5?'Bon taux. Il y a peut-etre des situations ou le remplacement n\'a pas ete possible (manque de bus dispo ?).':
+    'Taux faible — ca peut indiquer un manque de bus disponibles au depot. C\'est un argument concret pour demander plus de reserve.'}</p></div>`;
+  }
+
+  // Phrase cadre
+  html+=`<div class="cd" style="border-left:4px solid var(--accent);margin-top:12px">
+    <div style="font-size:12px;font-weight:800;color:var(--accent);margin-bottom:6px">💬 Ce que tu peux dire aux cadres :</div>
+    <p style="font-size:12px;font-style:italic;line-height:1.6">
+      « Depuis que je tiens une main courante au poste 8, j'ai identifie que
+      ${topLigne.length>0?`la ligne <b>${topLigne[0][0]}</b> concentre ${Math.round(topLigne[0][1]/Math.max(last30.length,1)*100)}% des incidents`:'certaines lignes sont plus touchees que d\'autres'}.
+      ${topCat.length>0?`Les pannes <b>${topCat[0][0].toLowerCase()}</b> sont les plus frequentes.`:''}
+      ${topBus.length>0&&topBus[0][1]>=2?`Le bus <b>${topBus[0][0]}</b> merite un passage atelier preventif.`:''}
+      Ces donnees permettent d'anticiper et de reduire les pertes de km IDFM. »
+    </p>
+  </div>`;
+
+  document.getElementById('insightsList').innerHTML=html;
+}
+
+// ═══════════════════════════════
+// EXPORT / IMPORT
+// ═══════════════════════════════
+function exportAll(){
+  const d=JSON.stringify({events,exported:nowISO()},null,2);
+  const b=new Blob([d],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);
+  a.download='main_courante_'+todayStr()+'.json';a.click();toast('Exporte ✓');
+}
+function importAll(e){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=function(ev){
+    try{
+      const d=JSON.parse(ev.target.result);
+      if(d.events){
+        if(confirm('Importer '+d.events.length+' evenements ?')){
+          events=d.events;sv();toast('Importe ✓');go('journal');
+        }
+      }else alert('Format invalide');
+    }catch{alert('Erreur')}
+  };r.readAsText(f);e.target.value='';
+}
+function resetAll(){
+  if(!confirm('TOUT effacer ?'))return;
+  if(!confirm('Vraiment ?'))return;
+  events=[];sv();toast('Efface');go('journal');
+}
+
+// Register Service Worker
+if("serviceWorker" in navigator){navigator.serviceWorker.register("./sw.js").catch(e=>console.log(e));}
+// INIT
+renderJournal();
+</script>
+</body>
+</html>
